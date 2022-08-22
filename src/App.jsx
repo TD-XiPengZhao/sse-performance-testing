@@ -1,28 +1,31 @@
-import React, { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { Button, InputNumber, Form, Select, Tag, Table } from "antd";
+import React, { useEffect, useState } from "react";
+import { Button, Form, Tag, Table, Input, Row, Col } from "antd";
 import SSESdk from "./server-sent-events";
 import generateUrl from "./common/generateUrl";
+import SSEconfigFrom from "./commpents/SSEConfig";
+import sendMessage from "./common/sendMessage";
 import "./App.css";
 
-const { Option } = Select;
+const { TextArea } = Input;
 
 function App() {
   const [sseSdks, setSseSdks] = useState([]);
-  const [env, setEnv] = useState("stg");
-  const [interactionCount, setInteractionCount] = useState(10);
-  const [splitCount, setSplitCount] = useState(3);
+  const [sseConfig, setSseConfig] = useState({
+    env: "stg",
+    interactionCount: 10,
+    splitCount: 1,
+  });
+  const [message, setMessage] = useState("");
+  const [token, setToken] = useState("");
   const [status, setStatus] = useState(false);
   const [userIds, setUserIds] = useState([]);
+  const [interactions, setInteractions] = useState([]);
 
   const startConnections = () => {
     let sseSdks = [];
-    const { urls, user_ids } = generateUrl({
-      interactionCount,
-      env,
-      splitCount,
-    });
+    const { urls, user_ids, interactions } = generateUrl(sseConfig);
     setUserIds(user_ids);
+    setInteractions(interactions);
     urls.forEach((url) => {
       const sseSdk = new SSESdk(url);
       sseSdks.push(sseSdk);
@@ -64,42 +67,75 @@ function App() {
 
   const data = userIds.map((userId) => {
     return {
+      key: userId,
       userId,
       status,
     };
   });
 
+  const [formInstance] = Form.useForm();
+  const submit = () => {
+    // 点击 验证表单信息
+    formInstance.validateFields().then((vals) => {
+      console.log(vals);
+      sendMessage({
+        ...vals,
+        ...{ interactionId: interactions[0], env: sseConfig.env },
+      });
+    });
+  };
+  useEffect(() => {
+    setToken(sessionStorage.getItem("token"));
+  }, [setToken]);
+
   return (
     <div className="App">
-      <Form
-        labelCol={{ span: 4 }}
-        wrapperCol={{ span: 16 }}
-        initialValues={{ interactionCount, env, splitCount }}
-      >
-        <Form.Item label="interaction数量" name="interactionCount">
-          <InputNumber
-            style={{ width: "100%" }}
-            onChange={setInteractionCount}
-            placeholder="请输入要创建的interaction数量"
-          />
-        </Form.Item>
+      <Row>
+        <Col span={12}>
+          <SSEconfigFrom
+            sseConfig={sseConfig}
+            setSseConfig={setSseConfig}
+          ></SSEconfigFrom>
+        </Col>
 
-        <Form.Item label="选择stg/qa环境" name="env" defaultValue={env}>
-          <Select onChange={setEnv} placeholder="请选择stg环境或者qa环境">
-            <Option value="stg">stg</Option>
-            <Option value="qa">qa</Option>
-          </Select>
-        </Form.Item>
+        <Col span={12}>
+          <Form
+            labelCol={{ span: 4 }}
+            form={formInstance}
+            wrapperCol={{ span: 16 }}
+            initialValues={{ token: sessionStorage.getItem("token"), message }}
+          >
+            <Form.Item
+              label="Token"
+              name="token"
+              rules={[{ required: true, message: "Please input token" }]}
+            >
+              <TextArea
+                style={{ width: "100%" }}
+                rows={3}
+                placeholder="请输入Token"
+                onChange={(event) => {
+                  setToken(event.target.value);
+                }}
+              />
+            </Form.Item>
+            <Form.Item
+              label="消息"
+              name="message"
+              rules={[{ required: true, message: "Please input message" }]}
+            >
+              <Input
+                style={{ width: "100%" }}
+                placeholder="请输入消息"
+                onChange={(event) => {
+                  setMessage(event.target.value);
+                }}
+              />
+            </Form.Item>
+          </Form>
+        </Col>
+      </Row>
 
-        <Form.Item label="每个SSE包含的最大interaction数" name="splitCount">
-          <InputNumber
-            max={50}
-            style={{ width: "100%" }}
-            onChange={setSplitCount}
-            placeholder="请输入每个SSE包含的最大interaction数"
-          />
-        </Form.Item>
-      </Form>
       <Button
         style={{ margin: "0px 5px" }}
         disabled={status}
@@ -123,6 +159,16 @@ function App() {
         onClick={clearConnections}
       >
         清理连接数据
+      </Button>
+
+      <Button
+        style={{ margin: "0px 5px" }}
+        disabled={!status}
+        onClick={() => {
+          submit();
+        }}
+      >
+        发送消息
       </Button>
       <Table columns={columns} dataSource={data} />
     </div>

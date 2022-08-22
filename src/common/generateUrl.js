@@ -30,6 +30,7 @@ function generateUrl({ interactionCount, env = "stg", splitCount = 50 }) {
   return {
     urls,
     user_ids,
+    interactions,
   };
 }
 
