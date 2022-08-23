@@ -20,6 +20,7 @@ function App() {
   const [status, setStatus] = useState(false);
   const [userIds, setUserIds] = useState([]);
   const [interactions, setInteractions] = useState([]);
+  const [data, setData] = useState([]);
 
   const startConnections = () => {
     let sseSdks = [];
@@ -29,7 +30,9 @@ function App() {
     urls.forEach((url) => {
       const sseSdk = new SSESdk(url);
       sseSdks.push(sseSdk);
+      sseSdk.messagesCount = 0;
       sseSdk.subscribe((mes) => {
+        sseSdk.messagesCount++;
         console.log(mes);
       });
     });
@@ -46,6 +49,8 @@ function App() {
     setUserIds([]);
   };
 
+  const statusDic = { 0: "connecting", 1: "open", 2: "closed" };
+
   const columns = [
     {
       title: "userId",
@@ -54,22 +59,36 @@ function App() {
       render: (text) => <span>{text}</span>,
     },
     {
+      title: "messagesCount",
+      dataIndex: "messagesCount",
+      key: "messagesCount",
+      render: (text) => <span>{text}</span>,
+    },
+    {
       title: "status",
       dataIndex: "status",
       key: "status",
       render: (status) => (
-        <Tag color={status ? "green" : "red"}>
-          {status ? "connection" : "close"}{" "}
-        </Tag>
+        <Tag color={status != 2 ? "green" : "red"}>{statusDic[status]}</Tag>
       ),
     },
   ];
 
-  const data = userIds.map((userId) => {
-    return {
-      key: userId,
-      userId,
-      status,
+  useEffect(() => {
+    const timeEvent = setTimeout(() => {
+      setData(
+        userIds.map((userId, index) => {
+          return {
+            key: userId,
+            userId,
+            messagesCount: sseSdks[index].messagesCount,
+            status: sseSdks[index].evtSource.readyState,
+          };
+        })
+      );
+    }, 1000);
+    return () => {
+      clearTimeout(timeEvent);
     };
   });
 
@@ -78,10 +97,19 @@ function App() {
     // 点击 验证表单信息
     formInstance.validateFields().then((vals) => {
       console.log(vals);
-      sendMessage({
-        ...vals,
-        ...{ interactionId: interactions[0], env: sseConfig.env },
-      });
+      let index = 0;
+      var timerInteraction = setInterval(() => {
+        const interactionId = interactions[index];
+        if (!interactionId) {
+          clearInterval(timerInteraction);
+        } else {
+          sendMessage({
+            ...vals,
+            ...{ interactionId, env: sseConfig.env },
+          });
+        }
+        index++;
+      }, 600);
     });
   };
   useEffect(() => {
@@ -171,6 +199,13 @@ function App() {
         发送消息
       </Button>
       <Table columns={columns} dataSource={data} />
+
+      <p>interactionId</p>
+      <TextArea
+        style={{ width: "100%" }}
+        rows={3}
+        value={JSON.stringify(interactions)}
+      />
     </div>
   );
 }

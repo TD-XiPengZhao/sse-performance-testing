@@ -1,10 +1,12 @@
+import { nanoid } from "nanoid";
+
 export default function sendMessage({ interactionId, message, token, env }) {
   console.log(
     `interactionId:${interactionId},message:${message},token:${token},`
   );
   const params = {
     interaction_id: interactionId,
-    message_id: "53aa61c9-85f3-47cc-b867-4dec4427cf2f",
+    message_id: nanoid(32),
     content: message,
     status: null,
     tags: null,
