@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { InputNumber, Form, Select } from "antd";
+import { InputNumber, Form,Input } from "antd";
 
-const { Option } = Select;
 
 function SSEconfigFrom({ sseConfig, setSseConfig }) {
   const [env, setEnv] = useState(sseConfig.env);
@@ -27,11 +26,13 @@ function SSEconfigFrom({ sseConfig, setSseConfig }) {
         />
       </Form.Item>
 
-      <Form.Item label="选择stg/qa环境" name="env" defaultValue={env}>
-        <Select onChange={setEnv} placeholder="请选择stg环境或者qa环境">
+      <Form.Item label="URL" name="env" defaultValue={env}>
+        <Input placeholder="请输入URL" onChange={(val)=>(setEnv(val.target.value))}/>
+        {/* <Select onChange={setEnv} placeholder="请选择stg环境或者qa环境">
           <Option value="stg">stg</Option>
           <Option value="qa">qa</Option>
-        </Select>
+          <Option value="local">local</Option>
+        </Select> */}
       </Form.Item>
 
       <Form.Item label="每个SSE包含的最大interaction数" name="splitCount">

@@ -1,22 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { Button, Form, Tag, Table, Input, Row, Col } from 'antd';
-import SSESdk from './server-sent-events';
-import generateUrl from './common/generateUrl';
-import SSEconfigFrom from './commpents/SSEConfig';
-import sendMessage from './common/sendMessage';
-import './App.css';
+import React, { useEffect, useState } from "react";
+import { Button, Form, Tag, Table, Input, Row, Col } from "antd";
+import SSESdk from "./server-sent-events";
+import generateUrl from "./common/generateUrl";
+import SSEconfigFrom from "./commpents/SSEConfig";
+import sendMessage from "./common/sendMessage";
+import "./App.css";
 
 const { TextArea } = Input;
 
 function App() {
   const [sseSdks, setSseSdks] = useState([]);
   const [sseConfig, setSseConfig] = useState({
-    env: 'stg',
+    env: "",
     interactionCount: 10,
     splitCount: 1,
   });
-  const [message, setMessage] = useState('');
-  const [token, setToken] = useState('');
+  const [message, setMessage] = useState("");
+  const [token, setToken] = useState("");
   const [status, setStatus] = useState(false);
   const [userIds, setUserIds] = useState([]);
   const [interactions, setInteractions] = useState([]);
@@ -28,15 +28,13 @@ function App() {
     setUserIds(user_ids);
     setInteractions(interactions);
     urls.forEach((url) => {
-      const sseSdk = new SSESdk(url);
+      const sseSdk = new SSESdk(url, token);
       sseSdks.push(sseSdk);
-      sseSdk.messagesCount = 0;
       sseSdk.subscribe(
         ({ evtSource }) => {
           setSseSdks((pre) => {
             const newDate = pre.map((item) => {
               if (item.evtSource.url === evtSource.url) {
-                item.messagesCount++;
                 return item;
               }
               return item;
@@ -71,27 +69,33 @@ function App() {
     setUserIds([]);
   };
 
-  const statusDic = { 0: 'connecting', 1: 'open', 2: 'closed' };
+  const statusDic = { 0: "connecting", 1: "open", 2: "closed" };
 
   const columns = [
     {
-      title: 'userId',
-      dataIndex: 'userId',
-      key: 'userId',
+      title: "userId",
+      dataIndex: "userId",
+      key: "userId",
       render: (text) => <span>{text}</span>,
     },
     {
-      title: 'messagesCount',
-      dataIndex: 'messagesCount',
-      key: 'messagesCount',
+      title: "messagesCount",
+      dataIndex: "messagesCount",
+      key: "messagesCount",
       render: (text) => <span>{text}</span>,
     },
     {
-      title: 'status',
-      dataIndex: 'status',
-      key: 'status',
+      title: "retryCount",
+      dataIndex: "retryCount",
+      key: "retryCount",
+      render: (text) => <span>{text}</span>,
+    },
+    {
+      title: "status",
+      dataIndex: "status",
+      key: "status",
       render: (status) => (
-        <Tag color={status != 2 ? 'green' : 'red'}>{statusDic[status]}</Tag>
+        <Tag color={status != 2 ? "green" : "red"}>{statusDic[status]}</Tag>
       ),
     },
   ];
@@ -101,6 +105,7 @@ function App() {
       key: userId,
       userId,
       messagesCount: sseSdks[index].messagesCount,
+      retryCount: sseSdks[index].retryCount,
       status: sseSdks[index].evtSource.readyState,
     };
   });
@@ -126,11 +131,11 @@ function App() {
     });
   };
   useEffect(() => {
-    setToken(sessionStorage.getItem('token'));
+    setToken(sessionStorage.getItem("token"));
   }, [setToken]);
 
   return (
-    <div className='App'>
+    <div className="App">
       <Row>
         <Col span={12}>
           <SSEconfigFrom
@@ -144,30 +149,30 @@ function App() {
             labelCol={{ span: 4 }}
             form={formInstance}
             wrapperCol={{ span: 16 }}
-            initialValues={{ token: sessionStorage.getItem('token'), message }}
+            initialValues={{ token: sessionStorage.getItem("token"), message }}
           >
             <Form.Item
-              label='Token'
-              name='token'
-              rules={[{ required: true, message: 'Please input token' }]}
+              label="Token"
+              name="token"
+              rules={[{ required: true, message: "Please input token" }]}
             >
               <TextArea
-                style={{ width: '100%' }}
+                style={{ width: "100%" }}
                 rows={3}
-                placeholder='请输入Token'
+                placeholder="请输入Token"
                 onChange={(event) => {
                   setToken(event.target.value);
                 }}
               />
             </Form.Item>
             <Form.Item
-              label='消息'
-              name='message'
-              rules={[{ required: true, message: 'Please input message' }]}
+              label="消息"
+              name="message"
+              rules={[{ required: true, message: "Please input message" }]}
             >
               <Input
-                style={{ width: '100%' }}
-                placeholder='请输入消息'
+                style={{ width: "100%" }}
+                placeholder="请输入消息"
                 onChange={(event) => {
                   setMessage(event.target.value);
                 }}
@@ -178,24 +183,24 @@ function App() {
       </Row>
 
       <Button
-        style={{ margin: '0px 5px' }}
+        style={{ margin: "0px 5px" }}
         disabled={status}
-        type='primary'
+        type="primary"
         onClick={startConnections}
       >
         开始连接
       </Button>
       <Button
-        style={{ margin: '0px 5px' }}
+        style={{ margin: "0px 5px" }}
         disabled={!status}
-        type='primary'
+        type="primary"
         danger
         onClick={closeConnections}
       >
         关闭连接
       </Button>
       <Button
-        style={{ margin: '0px 5px' }}
+        style={{ margin: "0px 5px" }}
         disabled={status}
         onClick={clearConnections}
       >
@@ -203,7 +208,7 @@ function App() {
       </Button>
 
       <Button
-        style={{ margin: '0px 5px' }}
+        style={{ margin: "0px 5px" }}
         disabled={!status}
         onClick={() => {
           submit();
@@ -221,7 +226,7 @@ function App() {
 
       <p>interactionId</p>
       <TextArea
-        style={{ width: '100%' }}
+        style={{ width: "100%" }}
         rows={3}
         value={JSON.stringify(interactions)}
       />
